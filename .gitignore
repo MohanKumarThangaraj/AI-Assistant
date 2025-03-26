@@ -1,3 +1,4 @@
 .qodo
 frontend/package-lock.json
 frontend/node_modules
+frontend/.next

@@ -1,32 +1,71 @@
+import uvicorn
 from fastapi import FastAPI, UploadFile, File
-from pydantic import BaseModel
-import whisper
-import torch
-from TTS.api import TTS
+from fastapi.middleware.cors import CORSMiddleware
+from backend.routes import chat
+from faster_whisper import WhisperModel
+import os
+import pyttsx3
+import tempfile
 
-app = FastAPI()
+app = FastAPI(
+    title="Chi-Chi AI",
+    description="A personal AI assistant backend powered by FastAPI.",
+    version="1.0.0"
+)
 
-# Load AI models
-stt_model = whisper.load_model("base")
-tts_model = TTS("tts_models/en/ljspeech/glow-tts").to("cpu")
+# CORS Middleware to allow frontend access
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins for now (change in production)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-class TextRequest(BaseModel):
-    text: str
+# Include chat routes
+app.include_router(chat.router, prefix="/api", tags=["Chat"])
 
-@app.post("/tts")
-async def text_to_speech(request: TextRequest):
-    tts_model.tts_to_file(text=request.text, file_path="output.wav")
-    return {"message": "TTS Done!", "audio_file": "output.wav"}
+# Initialize TTS Engine
+tts_engine = pyttsx3.init()
+tts_engine.setProperty("rate", 150)  # Adjust speech rate
+tts_engine.setProperty("volume", 1.0)  # Full volume
 
-@app.post("/stt")
-async def speech_to_text(audio: UploadFile = File(...)):
-    audio_path = f"temp_audio.wav"
-    with open(audio_path, "wb") as f:
-        f.write(audio.file.read())
-    
-    result = stt_model.transcribe(audio_path)
-    return {"text": result["text"]}
+# Load Whisper model for STT
+whisper_model = WhisperModel("base")
 
 @app.get("/")
-async def root():
-    return {"message": "Chi-Chi Backend Running"}
+def home():
+    return {"message": "FastAPI backend is working!"}
+def root():
+    """Root endpoint to check if the server is running."""
+    return {"message": "Chi-Chi AI Backend is running!"}
+
+@app.post("/api/tts/")
+async def text_to_speech(text: str):
+    """Convert text to speech and return an audio file."""
+    try:
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
+        tts_engine.save_to_file(text, temp_file.name)
+        tts_engine.runAndWait()
+        return {"audio_file": temp_file.name}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/api/stt/")
+async def speech_to_text(file: UploadFile = File(...)):
+    """Convert speech to text using OpenAI's Whisper model."""
+    try:
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
+        with open(temp_file.name, "wb") as f:
+            f.write(file.file.read())
+
+        # Transcribe audio
+        result = whisper_model.transcribe(temp_file.name)
+        os.remove(temp_file.name)  # Clean up file after processing
+
+        return {"text": result["text"]}
+    except Exception as e:
+        return {"error": str(e)}
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
