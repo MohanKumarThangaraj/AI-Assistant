@@ -1,11 +1,13 @@
 import uvicorn
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from backend.routes import chat
 from faster_whisper import WhisperModel
 import os
 import pyttsx3
 import tempfile
+import openai
+import asyncio
 
 app = FastAPI(
     title="Chi-Chi AI",
@@ -13,6 +15,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
+openai.api_key = "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"
 # CORS Middleware to allow frontend access
 app.add_middleware(
     CORSMiddleware,
@@ -21,7 +24,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 # Include chat routes
 app.include_router(chat.router, prefix="/api", tags=["Chat"])
 
@@ -69,3 +71,28 @@ async def speech_to_text(file: UploadFile = File(...)):
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        while True:
+            data = await websocket.receive_text()
+            print(f"User: {data}")
+
+            # Generate AI response
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=[{"role": "user", "content": "Hello!"}]
+            )
+            ai_reply = response["choices"][0]["message"]["content"]
+            print(f"AI: {ai_reply}")
+
+            # Convert text to speech (Optional)
+            tts_engine.say(ai_reply)
+            tts_engine.runAndWait()
+
+            await websocket.send_text(ai_reply)
+    except Exception as e:
+        print(f"WebSocket Error: {e}")
+    finally:
+        await websocket.close()
