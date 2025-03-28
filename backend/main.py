@@ -8,14 +8,15 @@ import pyttsx3
 import tempfile
 import openai
 import asyncio
+from dotenv import load_dotenv
 
 app = FastAPI(
     title="Chi-Chi AI",
     description="A personal AI assistant backend powered by FastAPI.",
     version="1.0.0"
 )
-
-openai.api_key = "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"
+load_dotenv()
+openai_api_key = os.getenv("OPENAI_API_KEY")
 # CORS Middleware to allow frontend access
 app.add_middleware(
     CORSMiddleware,
