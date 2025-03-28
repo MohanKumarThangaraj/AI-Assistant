@@ -1,3 +1,4 @@
+"use client";
 export default function Sidebar() {
   return (
     <aside className='w-64 p-4 bg-white/10 backdrop-blur-md shadow-neon h-full'>

@@ -1,0 +1,3 @@
+2nd commit 
+
+ Added AI-driven voice synthesis & emotion detection,Implemented 3D avatar facial expressions & lip-sync,Improved speech synthesis with dynamic voice tones,Enhanced AI assistant interactivity & realism,Upgraded materials, textures, and animations,Fixed type errors & improved state management,Optimized performance & responsiveness

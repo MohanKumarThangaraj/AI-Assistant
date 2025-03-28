@@ -1,3 +1,4 @@
+"use client";
 export default function Navbar() {
   return (
     <header className='backdrop-blur-md bg-white/10 border-b border-white/20 shadow-neon text-white p-4 flex justify-between items-center'>
